@@ -1,753 +1,339 @@
 <!DOCTYPE html>
 <html lang="ko">
-
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>IndexPlace AI - Premium Sandbox v4</title>
-    <style>
-        :root {
-            --bg: #070a13;
-            --card: #111827;
-            --primary: #38bdf8;
-            --primary-dark: #0ea5e9;
-            --accent: #10b981;
-            --text: #f8fafc;
-            --muted: #4b5563;
-            --border: #1f2937;
-            --theme-color: #c084fc;
-            --role-color: #fb923c;
-        }
-
-        * {
-            box-sizing: border-box;
-            margin: 0;
-            padding: 0;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-        }
-
-        body {
-            background-color: var(--bg);
-            color: var(--text);
-            height: 100vh;
-            display: flex;
-            flex-direction: column;
-            overflow: hidden;
-        }
-
-        /* 컨트롤 통합 헤더 (로그인 전에는 보이지 않음) */
-        header {
-            background: var(--card);
-            border-bottom: 1px solid var(--border);
-            padding: 0 40px;
-            display: none;
-            /* 로그인 성공 후 flex로 변경 */
-            justify-content: space-between;
-            align-items: center;
-            height: 70px;
-            z-index: 100;
-        }
-
-        header.authenticated {
-            display: flex;
-        }
-
-        header h1 {
-            font-size: 1.25rem;
-            color: var(--primary);
-            font-weight: 800;
-        }
-
-        /* 상단 네비게이션 독립 탭 UI */
-        .tab-container {
-            display: flex;
-            height: 100%;
-        }
-
-        .tab-btn {
-            background: none;
-            border: none;
-            color: var(--text);
-            padding: 0 24px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            cursor: pointer;
-            display: flex;
-            align-items: center;
-            gap: 8px;
-            border-bottom: 3px solid transparent;
-            transition: all 0.2s;
-            opacity: 0.6;
-        }
-
-        .tab-btn:hover {
-            opacity: 0.9;
-        }
-
-        .tab-btn.active {
-            opacity: 1;
-            color: var(--primary);
-            border-bottom-color: var(--primary);
-        }
-
-        main {
-            flex: 1;
-            position: relative;
-            height: calc(100vh - 70px);
-        }
-
-        /* 로그인 섹션 전용 레이아웃 */
-        .login-screen {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            width: 100%;
-            height: 100vh;
-            background: radial-gradient(circle at center, #111827 0%, #070a13 100%);
-            position: absolute;
-            top: 0;
-            left: 0;
-            z-index: 200;
-        }
-
-        .login-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            padding: 40px;
-            border-radius: 20px;
-            width: 440px;
-            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
-        }
-
-        /* 탭 메인 콘텐츠 구역 */
-        .tab-content {
-            display: none;
-            width: 100%;
-            height: 100%;
-            padding: 40px;
-            overflow-y: auto;
-        }
-
-        .tab-content.active {
-            display: block;
-        }
-
-        /* 가로 2분할 챗봇 빌더 레이아웃 */
-        .chat-builder-layout {
-            display: flex;
-            gap: 30px;
-            height: 100%;
-        }
-
-        .chat-left-panel {
-            width: 45%;
-            display: flex;
-            flex-direction: column;
-            height: 100%;
-        }
-
-        .chat-right-panel {
-            width: 55%;
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            padding: 30px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-        }
-
-        /* 공통 스타일 컴포넌트 */
-        .panel-title {
-            font-size: 1.25rem;
-            font-weight: 700;
-            margin-bottom: 4px;
-        }
-
-        .panel-subtitle {
-            font-size: 0.85rem;
-            color: #9ca3af;
-            margin-bottom: 20px;
-        }
-
-        .chat-scroller {
-            flex: 1;
-            background: #090d16;
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 20px;
-            overflow-y: auto;
-            display: flex;
-            flex-direction: column;
-            gap: 14px;
-            margin-bottom: 14px;
-            min-height: 200px;
-        }
-
-        .bubble {
-            max-width: 85%;
-            padding: 12px 16px;
-            border-radius: 14px;
-            font-size: 0.92rem;
-            line-height: 1.5;
-        }
-
-        .bubble.bot {
-            background: var(--card);
-            align-self: flex-start;
-            border-top-left-radius: 2px;
-            border: 1px solid var(--border);
-        }
-
-        .bubble.user {
-            background: var(--primary);
-            color: #050a14;
-            align-self: flex-end;
-            border-top-right-radius: 2px;
-            font-weight: 500;
-        }
-
-        .rag-tag {
-            font-size: 0.7rem;
-            color: var(--theme-color);
-            background: rgba(192, 132, 252, 0.1);
-            padding: 3px 6px;
-            border-radius: 4px;
-            font-weight: 600;
-        }
-
-        .chat-input-wrapper {
-            display: flex;
-            gap: 10px;
-        }
-
-        .chat-input-wrapper input {
-            flex: 1;
-            background: #090d16;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: #fff;
-            padding: 12px;
-            font-size: 0.95rem;
-        }
-
-        .chat-input-wrapper input:focus {
-            outline: none;
-            border-color: var(--primary);
-        }
-
-        input[type="text"],
-        input[type="password"] {
-            width: 100%;
-            background: #090d16;
-            border: 1px solid var(--border);
-            border-radius: 8px;
-            color: #fff;
-            padding: 12px;
-            font-size: 0.95rem;
-            margin-bottom: 16px;
-        }
-
-        .btn {
-            background: var(--primary);
-            color: #040811;
-            border: none;
-            border-radius: 8px;
-            padding: 12px 20px;
-            font-size: 0.95rem;
-            font-weight: 700;
-            cursor: pointer;
-            transition: all 0.2s;
-            text-align: center;
-        }
-
-        .btn:hover {
-            background: var(--primary-dark);
-            transform: translateY(-1px);
-        }
-
-        .btn-accent {
-            background: var(--accent);
-            color: var(--text);
-        }
-
-        /* 독립형 온톨로지 대시보드 그래픽 노드 구조 */
-        .graph-board-fullscreen {
-            width: 100%;
-            height: 100%;
-            background: #04070e;
-            border: 1px solid var(--border);
-            border-radius: 20px;
-            position: relative;
-            overflow: hidden;
-        }
-
-        .graph-legend {
-            position: absolute;
-            top: 24px;
-            left: 24px;
-            background: rgba(17, 24, 39, 0.85);
-            border: 1px solid var(--border);
-            padding: 12px 18px;
-            border-radius: 10px;
-            font-size: 0.8rem;
-            z-index: 10;
-            display: flex;
-            gap: 16px;
-        }
-
-        .legend-item {
-            display: flex;
-            align-items: center;
-            gap: 6px;
-        }
-
-        .node-obj {
-            position: absolute;
-            background: var(--card);
-            border: 2px solid #374151;
-            border-radius: 8px;
-            padding: 12px 18px;
-            font-size: 0.88rem;
-            font-weight: 700;
-            text-align: center;
-            transform: translate(-50%, -50%);
-            z-index: 5;
-        }
-
-        .node-obj.theme {
-            border-color: var(--theme-color);
-            background: #1d122b;
-            border-radius: 30px;
-        }
-
-        .node-obj.role {
-            border-color: var(--role-color);
-            background: #24160c;
-        }
-
-        .node-obj.stock {
-            background: #1f2937;
-            border-color: var(--primary);
-            box-shadow: 0 0 15px rgba(56, 189, 248, 0.2);
-        }
-
-        .node-sub {
-            font-size: 0.68rem;
-            display: block;
-            margin-top: 3px;
-            color: var(--primary);
-        }
-
-        .edge-path {
-            position: absolute;
-            background: var(--primary);
-            height: 1.5px;
-            transform-origin: top left;
-            z-index: 1;
-            opacity: 0.6;
-        }
-
-        .edge-desc {
-            position: absolute;
-            font-size: 0.72rem;
-            color: #fb7185;
-            background: #04070e;
-            padding: 2px 6px;
-            border-radius: 4px;
-            border: 1px solid var(--border);
-            transform: translate(-50%, -50%);
-            white-space: nowrap;
-            z-index: 6;
-            font-weight: 500;
-        }
-
-        /* ETF 리스트 아이템 구조 */
-        .item-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            background: #090d16;
-            padding: 14px 18px;
-            border-radius: 10px;
-            border: 1px solid var(--border);
-            margin-bottom: 10px;
-        }
-
-        .item-badge {
-            background: rgba(56, 189, 248, 0.1);
-            color: var(--primary);
-            padding: 4px 10px;
-            border-radius: 6px;
-            font-weight: bold;
-        }
-
-        /* 마켓플레이스 그리드 */
-        .market-grid {
-            display: grid;
-            grid-template-columns: repeat(3, 1fr);
-            gap: 24px;
-            margin-top: 10px;
-        }
-
-        .market-card-box {
-            background: var(--card);
-            border: 1px solid var(--border);
-            border-radius: 16px;
-            padding: 24px;
-            display: flex;
-            flex-direction: column;
-            justify-content: space-between;
-            border-top: 4px solid #4b5563;
-        }
-
-        .market-card-box.mine {
-            border-top-color: var(--accent);
-            box-shadow: 0 10px 25px rgba(16, 185, 129, 0.05);
-        }
-    </style>
+    <title>kosLINK AI - Premium Sandbox v4</title>
+    <!-- Google Fonts for Modern Typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- External CSS -->
+    <link rel="stylesheet" href="styles.css">
 </head>
-
 <body>
 
     <!-- ==========================================
-         GATEWAY: 전체 화면 로그인 스크린
+         GATEWAY: Fullscreen Login Screen
          ========================================== -->
     <div id="login-screen" class="login-screen">
-        <div style="text-align: center; margin-bottom: 24px;">
-            <h2 style="font-size: 2.2rem; font-weight: 800; color: var(--primary); letter-spacing: -0.5px;">IndexPlace
-                AI</h2>
-            <p style="color: var(--text); font-size: 0.95rem; margin-top: 4px; opacity: 0.7;">핀테크 혁신 데모 샌드박스 시스템</p>
-        </div>
         <div class="login-box">
-            <h3 style="margin-bottom: 20px; font-size: 1.05rem; font-weight: 700; text-align: center; color: #fff;">부스
-                시연용 공인 계정 로그인</h3>
+            <h2 class="login-logo">kosLINK AI</h2>
+            <p class="login-subtitle">3-Layer 밸류체인 온톨로지 기반의 AI 인덱스 빌더</p>
+            
+            <div style="margin-bottom: 24px;">
+                <h3 style="font-size: 1.05rem; font-weight: 700; color: #fff; margin-bottom: 8px;">부스 시연용 공인 계정 로그인</h3>
+                <p style="font-size: 0.8rem; color: var(--text-muted);">규제 샌드박스 환경 접근을 위한 파트너 계정 정보가 미리 로드되어 있습니다.</p>
+            </div>
 
-            <label
-                style="font-size: 0.8rem; color: var(--primary); display:block; margin-bottom: 6px; font-weight: 600;">시연용
-                파트너 ID</label>
-            <input type="text" value="demo_partner@startup-sandbox.io" readonly style="opacity: 0.8;">
+            <div class="login-form-group">
+                <label>시연용 파트너 ID</label>
+                <input type="text" value="demo_partner@startup-sandbox.io" readonly style="opacity: 0.7; cursor: not-allowed;">
+            </div>
 
-            <label
-                style="font-size: 0.8rem; color: var(--primary); display:block; margin-bottom: 6px; font-weight: 600;">시연용
-                액세스 PW</label>
-            <input type="password" value="••••••••" readonly style="opacity: 0.8;">
+            <div class="login-form-group">
+                <label>시연용 액세스 PW</label>
+                <input type="password" value="••••••••" readonly style="opacity: 0.7; cursor: not-allowed;">
+            </div>
 
-            <button class="btn" onclick="handleDemoLogin()" style="width: 100%; margin-top: 10px; padding: 14px;">보안 세션
-                수립 및 시스템 진입</button>
+            <button class="btn" onclick="handleDemoLogin()" style="width: 100%; margin-top: 10px; padding: 14px;">
+                보안 세션 수립 및 시스템 진입
+                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                    <polyline points="12 5 19 12 12 19"></polyline>
+                </svg>
+            </button>
         </div>
     </div>
 
-    <!-- 고정 메뉴 및 통합 내비게이션 탭 헤더 (로그인 후 점등) -->
+    <!-- ==========================================
+         HEADER: Fixed Top Navigation
+         ========================================== -->
     <header id="main-header">
-        <h1>IndexPlace AI</h1>
-
-        <div class="tab-container">
-            <button class="tab-btn active" onclick="switchMainTab('tab-chat', this)">🔮 AI 챗봇 빌더</button>
-            <button class="tab-btn" onclick="switchMainTab('tab-graph', this)">🗺️ 밸류체인 온톨로지</button>
-            <button class="tab-btn" onclick="switchMainTab('tab-market', this)">🛒 오픈 마켓플레이스</button>
+        <div class="header-brand">
+            <div class="orange-dot"></div>
+            <h1>kosLINK AI</h1>
         </div>
 
-        <div class="status-badge" id="mcp-indicator">제도권 가이드라인 최적화 샌드박스</div>
+        <div class="tab-container">
+            <button class="tab-btn active" onclick="switchMainTab('tab-chat', this)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z"></path>
+                </svg>
+                🔮 AI 챗봇 빌더
+            </button>
+            <button class="tab-btn" onclick="switchMainTab('tab-graph', this)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <circle cx="18" cy="5" r="3"></circle>
+                    <circle cx="6" cy="12" r="3"></circle>
+                    <circle cx="18" cy="19" r="3"></circle>
+                    <line x1="8.59" y1="13.51" x2="15.42" y2="17.49"></line>
+                    <line x1="15.41" y1="6.51" x2="8.59" y2="10.49"></line>
+                </svg>
+                🗺️ 밸류체인 온톨로지
+            </button>
+            <button class="tab-btn" onclick="switchMainTab('tab-market', this)">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                    <path d="M17 21v-2a4 4 0 0 0-4-4H5a4 4 0 0 0-4 4v2"></path>
+                    <circle cx="9" cy="7" r="4"></circle>
+                    <path d="M23 21v-2a4 4 0 0 0-3-3.87"></path>
+                    <path d="M16 3.13a4 4 0 0 1 0 7.75"></path>
+                </svg>
+                👥 소셜 커뮤니티 피드
+            </button>
+        </div>
+
+        <div class="status-badge" id="mcp-indicator">
+            <span class="indicator-pulse"></span>
+            제도권 가이드라인 최적화 샌드박스
+        </div>
     </header>
 
+    <!-- ==========================================
+         MAIN WORKSPACE: Tab Contents
+         ========================================== -->
     <main>
-        <!-- ==========================================
-             TAB 1: AI 챗봇 빌더 (여기서만 흐름 연동 발생)
-             ========================================== -->
+        
+        <!-- Floating Expand Button (shown when the right panel is folded) -->
+        <button id="expand-floating-btn" class="expand-floating-btn" onclick="expandRightPanel()">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                <line x1="19" y1="12" x2="5" y2="12"></line>
+                <polyline points="12 19 5 12 12 5"></polyline>
+            </svg>
+            ETF 미리보기 열기
+        </button>
+
+        <!-- ------------------------------------------
+             TAB 1: AI Chatbot Builder
+             ------------------------------------------ -->
         <div id="tab-chat" class="tab-content active">
             <div class="chat-builder-layout">
-                <!-- 왼쪽: RAG 대화 창 -->
+                
+                <!-- Left: Graph-RAG Interface Panel -->
                 <div class="chat-left-panel">
-                    <div class="panel-title">AI 공급망 대화방</div>
-                    <div class="panel-subtitle">DART 기반 가이드에 따라 개인 인적 사항 수집은 자동 제외됩니다.</div>
-
-                    <div class="chat-scroller" id="real-chat-scroller">
-                        <div class="bubble bot">안녕하세요! 국내 반도체 벨류체인 데이터룸에 오신 것을 환영합니다. 공급망 팩트체크를 원하시는 트렌드 키워드나 생각을 말씀해
-                            주세요.</div>
+                    <div class="panel-header">
+                        <div>
+                            <div class="panel-title">AI 공급망 대화방</div>
+                            <div class="panel-subtitle">DART 기반 가이드라인에 따라 가중 지수를 안전하게 도출합니다.</div>
+                        </div>
                     </div>
 
-                    <div style="margin-bottom: 12px; font-size: 0.8rem; color: var(--primary); cursor: pointer;"
-                        onclick="injectDemoQuestion()">
-                        💡 [시연용 가이드] 일반 대중의 제너럴한 질문 샘플 강제 입력하기
+                    <div class="chat-scroller" id="real-chat-scroller">
+                        <div class="bubble bot">
+                            <div class="rag-header">
+                                <svg width="12" height="12" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="3">
+                                    <circle cx="12" cy="12" r="10"></circle>
+                                    <path d="M12 8v4l3 3"></path>
+                                </svg>
+                                Graph-RAG 엔진 로드 완료
+                            </div>
+                            안녕하세요! 국내 반도체 벨류체인 데이터룸에 오신 것을 환영합니다. 공급망 팩트체크를 원하시는 트렌드 키워드나 생각을 말씀해 주세요.
+                        </div>
+                    </div>
+
+                    <div class="chat-guide-container">
+                        <div class="chat-guide-element" onclick="injectDemoQuestion('etf')">
+                            <span>🔮 [시연 1] ETF 포트폴리오 생성 질문</span>
+                        </div>
+                        <div class="chat-guide-element" onclick="injectDemoQuestion('general')">
+                            <span>🔍 [시연 2] 밸류체인 기업/일상 질문</span>
+                        </div>
                     </div>
 
                     <div class="chat-input-wrapper">
                         <input type="text" id="live-chat-input" placeholder="여기에 질문을 입력하고 엔터를 누르세요..."
                             onkeypress="if(event.key === 'Enter') triggerLiveMessage()">
-                        <button class="btn" onclick="triggerLiveMessage()">전송</button>
+                        <button class="btn" onclick="triggerLiveMessage()">
+                            전송
+                            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                <line x1="22" y1="2" x2="11" y2="13"></line>
+                                <polygon points="22 2 15 22 11 13 2 9 22 2"></polygon>
+                            </svg>
+                        </button>
                     </div>
                 </div>
 
-                <!-- 오른쪽: 실시간 연동 빌드 확인 창 -->
-                <div class="chat-right-panel">
+                <!-- Right: Collapsible ETF Preview Panel -->
+                <div id="chat-right-panel" class="chat-right-panel">
                     <div>
-                        <div class="panel-title">🎯 실시간 매핑 결과물 미리보기</div>
-                        <div class="panel-subtitle">대화 맥락에서 도출된 역할 슬롯과 체급 매칭 데이터셋입니다.</div>
+                        <div class="panel-header">
+                            <div>
+                                <div class="panel-title">🎯 실시간 매핑 결과물 미리보기</div>
+                                <div class="panel-subtitle">대화 맥락에서 도출된 역할 슬롯 및 자산 배분 비중 데이터셋입니다.</div>
+                            </div>
+                            <!-- Panel Collapse Trigger -->
+                            <button class="toggle-panel-btn" onclick="toggleRightPanel()" title="패널 접기">
+                                <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5">
+                                    <line x1="5" y1="12" x2="19" y2="12"></line>
+                                    <polyline points="12 5 19 12 12 19"></polyline>
+                                </svg>
+                            </button>
+                        </div>
 
-                        <div id="etf-preview-area" style="opacity: 0.4;">
-                            <p style="text-align: center; padding: 40px 0; color: var(--muted); font-size: 0.9rem;">
-                                대화창에서 분석 질문을 전송하면,<br>AI 규칙 기반 자산 비중이 이곳에 즉시 계산됩니다.</p>
+                        <div id="etf-preview-area" style="opacity: 0.4; transition: var(--transition);">
+                            <p style="text-align: center; padding: 60px 0; color: var(--text-muted); font-size: 0.9rem; line-height: 1.6;">
+                                대화창에서 분석 질문을 전송하면,<br>AI 규칙 기반 자산 비중이 이곳에 즉시 계산됩니다.
+                            </p>
                         </div>
                     </div>
 
-                    <button class="btn btn-accent" id="btn-mcp-publish" style="width: 100%; display: none;"
-                        onclick="executeMcpTabLink()">🚀 마켓플레이스에 일회성 열람 상품으로 즉시 상장하기</button>
+                    <button class="btn btn-accent" id="btn-mcp-publish" style="width: 100%; display: none; padding: 14px;"
+                        onclick="executeMcpTabLink()">
+                        🚀 커뮤니티 피드에 이 포트폴리오 무료 공유하기
+                    </button>
                 </div>
             </div>
         </div>
 
-        <!-- ==========================================
-             TAB 2: 독립형 밸류체인 온톨로지 시각화
-             ========================================== -->
+        <!-- ------------------------------------------
+             TAB 2: Value Chain Ontology Visualizer
+             ------------------------------------------ -->
         <div id="tab-graph" class="tab-content">
             <div class="panel-title" style="margin-bottom: 2px;">국내 반도체 밸류체인 관계 도표 (3-Layer)</div>
             <div class="panel-subtitle">구조: [테마 분야] ➔ [생태계 내 기술 역할군] ➔ [정합 상장 종목 및 시총 체급 속성]</div>
 
-            <div class="graph-board-fullscreen">
-                <div class="graph-legend">
-                    <div class="legend-item"><span style="color: var(--theme-color);">●</span> 테마 분야</div>
-                    <div class="legend-item"><span style="color: var(--role-color);">●</span> 밸류체인 역할</div>
-                    <div class="legend-item"><span style="color: var(--primary);">●</span> 검증 강소기업</div>
+            <div class="ontology-layout">
+                <!-- Left Side: Interactive SVG Graph Visualizer -->
+                <div class="graph-board-fullscreen">
+                    <div class="graph-legend">
+                        <div class="legend-item"><span style="color: var(--theme-color);">●</span> 테마 분야</div>
+                        <div class="legend-item"><span style="color: var(--primary);">●</span> 밸류체인 역할</div>
+                        <div class="legend-item"><span style="color: #60a5fa;">●</span> 검증 강소기업</div>
+                    </div>
+                    <div class="viewport-fullscreen" id="dashboard-viewport" style="width: 100%; height: 100%;">
+                        <!-- Dynamically rendered via app.js -->
+                    </div>
                 </div>
-                <div class="viewport-fullscreen" id="dashboard-viewport">
-                    <!-- JS에 의해 상시 렌더링 유지 -->
+
+                <!-- Right Side: Two Core Justifications for Judges -->
+                <div class="ontology-info-panel">
+                    <div class="info-panel-title">
+                        <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5" style="color: var(--primary);">
+                            <circle cx="12" cy="12" r="10"></circle>
+                            <line x1="12" y1="16" x2="12" y2="12"></line>
+                            <line x1="12" y1="8" x2="12.01" y2="8"></line>
+                        </svg>
+                        심사위원을 설득하는 2가지 핵심 명분
+                    </div>
+                    
+                    <div class="justification-card">
+                        <div class="justification-badge">명분 ①</div>
+                        <h4 class="justification-title">할루시네이션(환각) 방어 및 팩트 체크</h4>
+                        <p class="justification-desc">
+                            AI가 무분별한 뉴스를 탐색하는 대신, <strong>금감원 DART 공시</strong>와 <strong>사업보고서</strong>로 교차 검증된 팩트 기반 관계선(Edge Description)만 참조합니다. 찌라시/유령 테마 기업 추천을 사전에 완벽 차단하는 <strong>신뢰 가드레일</strong> 역할을 수행합니다.
+                        </p>
+                    </div>
+
+                    <div class="justification-card">
+                        <div class="justification-badge">명분 ②</div>
+                        <h4 class="justification-title">수학 공식 없는 ETF 비중(%) 산출</h4>
+                        <p class="justification-desc">
+                            복잡한 가중치 수식 없이, 온톨로지의 그래프 탐색 필터와 노드 속성만으로 비중을 결정합니다.
+                            <br><br>
+                            예: <em>"대기업 제외"</em> 지시 시 <strong>[대형주]</strong>인 삼성전자 소거 ➔ 남은 <strong>[검사부품]</strong>과 <strong>[IP설계]</strong> 역할에 자산 균등 배분 ➔ 개별 종목의 <strong>{체급} 속성</strong>(중형주: 리노공업 40%/ISC 35%, 소형주: 오픈엣지 25%)에 맞춰 가중치를 부여합니다.
+                        </p>
+                    </div>
                 </div>
             </div>
         </div>
 
-        <!-- ==========================================
-             TAB 3: 오픈 마켓플레이스
-             ========================================== -->
+        <!-- ------------------------------------------
+             TAB 3: Open Marketplace (Pivoted to Social Community Feed)
+             ------------------------------------------ -->
         <div id="tab-market" class="tab-content">
-            <div class="panel-title" style="margin-bottom: 2px;">지식 IP 콘텐츠 유통 스토어</div>
-            <div class="panel-subtitle">타인의 통찰이 담긴 기성 인덱스를 일회성 소액료로 안전하게 구독/열람하는 플랫폼 공간입니다.</div>
+            <div class="panel-title" style="margin-bottom: 2px;">소셜 인베스팅 커뮤니티 피드</div>
+            <div class="panel-subtitle">집단지성을 활용하여 유저들이 구성한 포트폴리오를 무료로 공유하고 분석 리포트를 피드로 나누는 공간입니다.</div>
+
+            <!-- Global Returns Period Filter -->
+            <div class="market-toolbar">
+                <span class="toolbar-label">📈 수익률 기간 필터:</span>
+                <div class="period-selector">
+                    <button class="period-btn" data-period="1w" onclick="changeMarketPeriod('1w')">1주</button>
+                    <button class="period-btn active" data-period="1m" onclick="changeMarketPeriod('1m')">1개월</button>
+                    <button class="period-btn" data-period="6m" onclick="changeMarketPeriod('6m')">6개월</button>
+                    <button class="period-btn" data-period="1y" onclick="changeMarketPeriod('1y')">1년</button>
+                </div>
+            </div>
 
             <div class="market-grid" id="market-grid-container">
-                <!-- 기성 상품 1 -->
-                <div class="market-card-box">
-                    <div
-                        style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 12px; color: var(--muted);">
+                <!-- Item 1 -->
+                <div class="market-card-box" onclick="openEtfDetail('cxl-index')" style="cursor: pointer;">
+                    <div class="market-card-header">
                         <span>OWNER: @SuperGemi</span>
-                        <span style="color: #fbbf24; font-weight: bold;">단건 열람료: 1,000원</span>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <span id="yield-badge-cxl-index" class="yield-badge-style" style="font-size:0.75rem; font-weight:800; padding:2px 8px; border-radius:12px; border:1px solid; color:#e11d48; background:#fff1f2; border-color:rgba(225, 29, 72, 0.15);">+5.4%</span>
+                            <span style="color: var(--primary); font-weight: 800;">👍 45개</span>
+                        </div>
                     </div>
-                    <h4 style="font-size: 1.1rem; margin-bottom: 8px;">CXL 2.0 차세대 제어 인터페이스 셋</h4>
-                    <p style="font-size: 0.8rem; color: #9ca3af; line-height: 1.4;">메모리 확장 프로토콜 연동성이 확약된 독립 리서치 소스 검증 비중
-                        파일</p>
-                    <button class="btn"
-                        style="background:#1f2937; color:#fff; width:100%; margin-top:24px; font-size:0.85rem;"
-                        onclick="alert('데모용 일회성 결제 팝업창 연출')">데이터 결제 후 열람</button>
+                    <h4 class="market-card-title">CXL 2.0 차세대 제어 인터페이스 셋</h4>
+                    <p class="market-card-desc">메모리 확장 프로토콜 연동성이 확약된 독립 리서치 소스 검증 비중 지수 파일</p>
+                    <div style="background: rgba(15, 23, 42, 0.03); border: 1px dashed var(--border); padding: 10px; border-radius: 8px; font-size: 0.8rem; text-align: center; color: var(--text-muted);">
+                        🔍 클릭하여 상세 정보 & 대화 요약 조회
+                    </div>
                 </div>
 
-                <!-- 기성 상품 2 -->
-                <div class="market-card-box">
-                    <div
-                        style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 12px; color: var(--muted);">
+                <!-- Item 2 -->
+                <div class="market-card-box" onclick="openEtfDetail('hbm3e-index')" style="cursor: pointer;">
+                    <div class="market-card-header">
                         <span>OWNER: @QuantKing</span>
-                        <span style="color: #fbbf24; font-weight: bold;">단건 열람료: 2,000원</span>
+                        <div style="display:flex; gap:8px; align-items:center;">
+                            <span id="yield-badge-hbm3e-index" class="yield-badge-style" style="font-size:0.75rem; font-weight:800; padding:2px 8px; border-radius:12px; border:1px solid; color:#e11d48; background:#fff1f2; border-color:rgba(225, 29, 72, 0.15);">+8.2%</span>
+                            <span style="color: var(--primary); font-weight: 800;">👍 88개</span>
+                        </div>
                     </div>
-                    <h4 style="font-size: 1.1rem; margin-bottom: 8px;">HBM3E 패키징 핵심 장비 정합 지수</h4>
-                    <p style="font-size: 0.8rem; color: #9ca3af; line-height: 1.4;">국내 대형 리서치 다단계 공시 데이터 기반 가중치 추출 족보
-                    </p>
-                    <button class="btn"
-                        style="background:#1f2937; color:#fff; width:100%; margin-top:24px; font-size:0.85rem;"
-                        onclick="alert('데모용 일회성 결제 팝업창 연출')">데이터 결제 후 열람</button>
+                    <h4 class="market-card-title">HBM3E 패키징 핵심 장비 정합 지수</h4>
+                    <p class="market-card-desc">국내 대형 리서치 다단계 공시 데이터 기반 가중치 추출 족보 지수 데이터</p>
+                    <div style="background: rgba(15, 23, 42, 0.03); border: 1px dashed var(--border); padding: 10px; border-radius: 8px; font-size: 0.8rem; text-align: center; color: var(--text-muted);">
+                        🔍 클릭하여 상세 정보 & 대화 요약 조회
+                    </div>
                 </div>
             </div>
         </div>
     </main>
 
-    <script>
-        // 전역 정적 온톨로지 모델 아키텍처 정의 (상시 로드용)
-        const fullOntologyModel = {
-            theme: { id: "T_AI", label: "온디바이스 AI (주제)", x: 20, y: 50 },
-            roles: [
-                { id: "R_CHIP", label: "칩 제조사 (Core)", x: 50, y: 25 },
-                { id: "R_TEST", label: "검사 부품 (Sub)", x: 50, y: 50 },
-                { id: "R_DSN", label: "IP 설계 (Sub)", x: 50, y: 75 },
-            ],
-            stocks: [
-                { id: "S_SEC", label: "삼성전자", x: 82, y: 18, size: "대형주", roleId: "R_CHIP" },
-                { id: "S_LNO", label: "리노공업", x: 82, y: 40, size: "중형주", roleId: "R_TEST" },
-                { id: "S_ISC", label: "ISC", x: 82, y: 58, size: "중형주", roleId: "R_TEST" },
-                { id: "S_OPE", label: "오픈엣지", x: 82, y: 82, size: "소형주", roleId: "R_DSN" }
-            ],
-            edges: [
-                { from: "T_AI", to: "R_CHIP", label: "메인 디바이스 연산 컨트롤러 층" },
-                { from: "T_AI", to: "R_TEST", label: "소모성 미세 소켓 가중치 적용 층" },
-                { from: "T_AI", to: "R_DSN", label: "저전력 NPU 설계 아키텍처 층" },
-                { from: "R_CHIP", to: "S_SEC", label: "KRX 대표 파운드리 마스터" },
-                { from: "R_TEST", to: "S_LNO", label: "금감원 DART: 초미세 검사 핀 독점" },
-                { from: "R_TEST", to: "S_ISC", label: "사업보고서: 메모리용 러버소켓 공급선" },
-                { from: "R_DSN", to: "S_OPE", label: "시스템 인터페이스 국산화 지수" }
-            ]
-        };
+    <!-- ==========================================
+         MCP Registration Loading Overlay
+         ========================================== -->
+    <div id="mcp-overlay" class="mcp-overlay">
+        <div class="mcp-spinner">
+            <div class="mcp-spinner-ring"></div>
+            <div class="mcp-spinner-ring"></div>
+            <div class="mcp-spinner-ring"></div>
+        </div>
+        <div id="mcp-status-text" class="mcp-status-text">원격 커뮤니티 피드 공유 중...</div>
+    </div>
 
-        // 로그인 버튼 클릭 시 연출 기능
-        function handleDemoLogin() {
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('main-header').classList.add('authenticated');
-        }
-
-        // 완벽한 탭 전환 라우터 엔진
-        function switchMainTab(targetTabId, element) {
-            document.querySelectorAll('.tab-content').forEach(c => c.classList.remove('active'));
-            document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
-
-            document.getElementById(targetTabId).classList.add('active');
-            element.classList.add('active');
-
-            // 온톨로지 탭 선택 시 즉시 풀 스크린 고정 지도 렌더링 유동 작동
-            if (targetTabId === 'tab-graph') {
-                renderFullscreenOntology();
-            }
-        }
-
-        // 질문 덤프 주입기
-        function injectDemoQuestion() {
-            document.getElementById('live-chat-input').value = "요즘 온디바이스 AI 장비 부품주 뉴스 많이 나오던데, 삼전 말고 실제 대기업 공급망 밑단에서 알짜로 실속 챙기는 강소기업 위주로 필터링해서 포트폴리오 짜줘.";
-        }
-
-        // 유저 대화 인터랙션 큐 구동
-        function triggerLiveMessage() {
-            const input = document.getElementById('live-chat-input');
-            const query = input.value.trim();
-            if (!query) return;
-
-            const scroller = document.getElementById('real-chat-scroller');
-
-            // 유저 말풍선 빌드업
-            const uB = document.createElement('div');
-            uB.className = 'bubble user';
-            uB.innerText = query;
-            scroller.appendChild(uB);
-            input.value = "";
-            scroller.scrollTop = scroller.scrollHeight;
-
-            // AI 정형 분석 타이밍 연출
-            setTimeout(() => {
-                const bB = document.createElement('div');
-                bB.className = 'bubble bot';
-                bB.innerHTML = `
-                    <span class="rag-tag">🌐 3-Layer Graph-RAG 추론 가동</span><br/>
-                    DART 연동 규칙에 입각해 대형주 노드(삼성전자)를 자산 배분 대상에서 자동 소거 필터링했습니다.<br/><br/>
-                    대신 사업보고서 정량 데이터 매핑 결과 <strong>[검사 부품]</strong> 영역 허브인 <strong>리노공업</strong>과 <strong>ISC</strong>를 적출하였고, <strong>[IP 설계]</strong> 노드에서 <strong>오픈엣지테크놀로지</strong>를 바인딩했습니다. 도출된 비중 레이아웃을 우측 미리보기 패널에 동적 빌드했습니다.
-                `;
-                scroller.appendChild(bB);
-                scroller.scrollTop = scroller.scrollHeight;
-
-                // 우측 미러 패널 내용 생성 고도화 및 버튼 활성화
-                buildEtfPreviewContent();
-            }, 1000);
-        }
-
-        // 우측 미리보기 패널 룰 기반 생성 엔진
-        function buildEtfPreviewContent() {
-            const area = document.getElementById('etf-preview-area');
-            area.style.opacity = "1";
-            area.innerHTML = `
-                <div style="font-weight: 800; font-size: 1.1rem; color: var(--primary); margin-bottom: 4px;">온디바이스 AI 알짜 강소기업 인덱스</div>
-                <p style="font-size:0.75rem; color:var(--muted); margin-bottom:14px;">로직 근거: 칩 제조사 제외 ➔ 검사부품/IP설계 역할 분산 ➔ 체급 비중 정규화</p>
-                <div class="item-row">
-                    <div><strong>리노공업 (중형주)</strong><div style="font-size:0.7rem; color:var(--muted);">검사 소켓 공급망 상위 노드</div></div>
-                    <div class="item-badge">40%</div>
+    <!-- ==========================================
+         ETF Detail Modal (Interactive pop-up)
+         ========================================== -->
+    <div id="etf-detail-modal" class="modal-overlay" onclick="if(event.target === this) closeEtfDetail()">
+        <div class="modal-card">
+            <div class="modal-header">
+                <h3 id="modal-etf-title" class="modal-title">ETF 상세 정보</h3>
+                <button class="modal-close-btn" onclick="closeEtfDetail()">&times;</button>
+            </div>
+            <div class="modal-body">
+                <div class="modal-meta-row">
+                    <span id="modal-etf-owner" class="modal-meta-owner">OWNER: @SuperGemi</span>
+                    <span id="modal-etf-price" class="modal-meta-price" style="color: var(--primary);">추천수: 👍 45개</span>
                 </div>
-                <div class="item-row">
-                    <div><strong>ISC (중형주)</strong><div style="font-size:0.7rem; color:var(--muted);">메모리 러버 테스트 소켓 벤더</div></div>
-                    <div class="item-badge">35%</div>
+                
+                <div id="modal-etf-yield" class="modal-yield positive">1개월 수익률: +5.4%</div>
+                
+                <div class="modal-section-title">📊 구성 종목 및 비중</div>
+                <div id="modal-etf-weights-list" class="modal-weights-container">
+                    <!-- Dynamic -->
                 </div>
-                <div class="item-row">
-                    <div><strong>오픈엣지테크놀로지 (소형주)</strong><div style="font-size:0.7rem; color:var(--muted);">NPU 설계자산 IP 코어 보유</div></div>
-                    <div class="item-badge">25%</div>
+                
+                <div class="modal-section-title">💡 챗봇 분석 요약 및 인덱스 장점</div>
+                <div id="modal-etf-summary" class="modal-summary-text">
+                    <!-- Dynamic -->
                 </div>
-            `;
-            document.getElementById('btn-mcp-publish').style.display = 'block';
-        }
+            </div>
+        </div>
+    </div>
 
-        // MCP 체결 후 마켓 이동 흐름 연동 연출 (핵심 프로세스 링킹)
-        function executeMcpTabLink() {
-            const indicator = document.getElementById('mcp-indicator');
-            indicator.innerText = "⚡ MCP 통신: 인덱스 지식 자산 원격 등록 중...";
-            indicator.style.color = "var(--accent)";
-
-            setTimeout(() => {
-                // 마켓플레이스 UI에 동적으로 신규 카드 즉시 최상단 주입
-                const marketGrid = document.getElementById('market-grid-container');
-                const newCard = document.createElement('div');
-                newCard.className = "market-card-box mine";
-                newCard.innerHTML = `
-                    <div style="display: flex; justify-content: space-between; font-size: 0.75rem; margin-bottom: 12px;">
-                        <span style="color: var(--accent); font-weight: bold;">[MY PRODUCT] 나</span>
-                        <span style="color: #fbbf24; font-weight: bold;">단건 열람: 1,500원</span>
-                    </div>
-                    <h4 style="font-size: 1.1rem; margin-bottom: 8px;">온디바이스 AI 알짜 강소기업 인덱스</h4>
-                    <p style="font-size: 0.8rem; color: #9ca3af; line-height: 1.4;">DART 추출 반도체 후공정 소켓 및 설계자산 타겟팅 팩트체크 기반 최적 지수 배분 비율셋</p>
-                    <div style="background: #090d16; border: 1px dashed var(--border); padding: 10px; border-radius: 8px; font-size: 0.8rem; text-align: center; color: var(--accent); margin-top: 24px;">
-                        🔓 마켓 상장 성공 (정산 관리 작동 중)
-                    </div>
-                `;
-                marketGrid.insertBefore(newCard, marketGrid.firstChild);
-
-                // 마켓 탭으로 강제 라우팅 이동 처리
-                indicator.innerText = "인덱스 원격 상장 상용구 체결 완료";
-                switchMainTab('tab-market', document.querySelectorAll('.tab-btn')[2]);
-            }, 1200);
-        }
-
-        // 독립형 3-Layer 온톨로지 대시보드 렌더러 엔진
-        function renderFullscreenOntology() {
-            const viewport = document.getElementById('dashboard-viewport');
-            viewport.innerHTML = "";
-
-            // 1. 관계 선 및 설명 텍스트 레이아웃 빌드
-            fullOntologyModel.edges.forEach(edge => {
-                const fromNode = findNodeData(edge.from);
-                const toNode = findNodeData(edge.to);
-
-                const line = document.createElement('div');
-                line.className = "edge-path";
-                line.style.left = `${fromNode.x}%`;
-                line.style.top = `${fromNode.y}%`;
-
-                const dist = Math.sqrt((toNode.x - fromNode.x) ** 2 + (toNode.y - fromNode.y) ** 2);
-                const angle = Math.atan2(toNode.y - fromNode.y, toNode.x - fromNode.x) * 180 / Math.PI;
-
-                line.style.width = `${dist}%`;
-                line.style.transform = `rotate(${angle}deg)`;
-                viewport.appendChild(line);
-
-                // 에지 설명 라벨 배치
-                const desc = document.createElement('div');
-                desc.className = "edge-desc active";
-                desc.innerText = edge.label;
-                desc.style.left = `${(fromNode.x + toNode.x) / 2}%`;
-                desc.style.top = `${(fromNode.y + toNode.y) / 2}%`;
-                viewport.appendChild(desc);
-            });
-
-            // 2. 노드 배치 오브젝트 씌우기
-            createDomNode(fullOntologyModel.theme, "theme", "");
-            fullOntologyModel.roles.forEach(r => createDomNode(r, "role", ""));
-            fullOntologyModel.stocks.forEach(s => createDomNode(s, "stock", `<span class="node-sub">${s.size}</span>`));
-
-            function findNodeData(id) {
-                if (fullOntologyModel.theme.id === id) return fullOntologyModel.theme;
-                let f = fullOntologyModel.roles.find(r => r.id === id);
-                if (!f) f = fullOntologyModel.stocks.find(s => s.id === id);
-                return f;
-            }
-
-            function createDomNode(obj, className, subHtml) {
-                const div = document.createElement('div');
-                div.className = `node-obj ${className}`;
-                div.style.left = `${obj.x}%`;
-                div.style.top = `${obj.y}%`;
-                div.innerHTML = `${obj.label} ${subHtml}`;
-                viewport.appendChild(div);
-            }
-        }
-    </script>
+    <!-- External JavaScript -->
+    <script src="app.js"></script>
 </body>
-
 </html>
